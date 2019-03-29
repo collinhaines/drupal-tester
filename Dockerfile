@@ -21,17 +21,21 @@ RUN curl -fSL https://ftp.drupal.org/files/projects/drupal-${DRUPAL_VERSION}.tar
   chown -R www-data:www-data sites modules themes && \
   mkdir /var/www/html/results
 
-# Composer and Drush.
+# Composer.
 RUN curl -fSL https://getcomposer.org/installer | php && \
-  mv composer.phar /usr/local/bin/composer && \
-  composer global require drush/drush:8.2.2
+  mv composer.phar /usr/local/bin/composer
 
-ENV PATH="${PATH}:/root/.composer/vendor/bin"
+# Drush.
+WORKDIR /opt
 
+RUN composer require drush/drush:8.2.2 && \
+  ln -s /opt/vendor/drush/drush/drush /usr/local/bin/drush
+
+# Custom scripts.
 COPY list.sh /var/www/html/list.sh
 COPY test.sh /var/www/html/test.sh
 
-# Custom scripts.
+WORKDIR /var/www/html
 RUN chmod +x list.sh test.sh
 
 EXPOSE 8080
