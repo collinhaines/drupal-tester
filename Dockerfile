@@ -39,6 +39,8 @@ COPY drupal-simpletest drupal-simpletest-listing drupal-tester-start /usr/local/
 COPY run-tests.sh /var/www/html/scripts
 COPY settings.php /var/www/html/sites/default
 
+RUN chmod +x /usr/local/bin/drupal-simpletest /usr/local/bin/drupal-simpletest-listing /usr/local/bin/drupal-tester-start
+
 WORKDIR /var/www/html
 EXPOSE 80
 
