@@ -3,9 +3,12 @@ FROM ubuntu:18.04
 ENV DEBIAN_FRONTEND="noninteractive"
 
 RUN apt update --yes
-RUN apt install --yes curl software-properties-common sqlite3 unzip
+RUN apt install --yes curl software-properties-common unzip
 RUN add-apt-repository ppa:ondrej/php
-RUN apt install --yes php7.1 php7.1-curl php7.1-gd php7.1-json php7.1-mbstring php7.1-mcrypt php7.1-sqlite3 php7.1-xml php7.1-xmlrpc php7.1-zip
+RUN apt install --yes php7.1 php7.1-curl php7.1-gd php7.1-json php7.1-mbstring php7.1-mcrypt php7.1-mysql php7.1-xml php7.1-xmlrpc php7.1-zip
+RUN echo "mysql-server mysql-server/root_password password root" | debconf-set-selections && \
+  echo "mysql-server mysql-server/root_password_again password root" | debconf-set-selections && \
+  apt-get install mysql-server --yes
 
 # Drupal.
 WORKDIR /var/www/html
@@ -18,8 +21,8 @@ RUN curl -fSL https://ftp.drupal.org/files/projects/drupal-${DRUPAL_VERSION}.tar
   echo "${DRUPAL_MD5} *drupal.tar.gz" | md5sum -c - && \
   tar -xz --strip-components=1 -f drupal.tar.gz  && \
   rm drupal.tar.gz index.html && \
-  chown -R www-data:www-data sites modules themes && \
-  mkdir /var/www/html/results
+  mkdir /var/www/html/results && \
+  chown -R www-data:www-data /var/www/html
 
 # Composer.
 RUN curl -fSL https://getcomposer.org/installer | php && \
@@ -31,13 +34,12 @@ WORKDIR /opt
 RUN composer require drush/drush:8.2.2 && \
   ln -s /opt/vendor/drush/drush/drush /usr/local/bin/drush
 
-# Custom scripts.
-COPY list.sh /var/www/html/list.sh
-COPY test.sh /var/www/html/test.sh
+# Custom scripts and files.
+COPY drupal-simpletest drupal-simpletest-listing drupal-tester-start /usr/local/bin/
+COPY run-tests.sh /var/www/html/scripts
+COPY settings.php /var/www/html/sites/default
 
 WORKDIR /var/www/html
-RUN chmod +x list.sh test.sh
+EXPOSE 80
 
-EXPOSE 8080
-
-CMD drush cutie --yes --use-existing --server=:8080 --enable=simpletest
+CMD drupal-tester-start

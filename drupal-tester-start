@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Check if service is running.
+if [ $(pgrep mysql | wc -l) -gt 0 ];
+then
+  service mysql stop
+fi
+
+# Force the MySQL user on these folders, if applicable.
+if [ -d /var/lib/mysql ]; then
+  chown -R mysql:mysql /var/lib/mysql
+fi
+
+if [ -d /var/run/mysqld ]; then
+  chown -R mysql:mysql /var/run/mysqld
+fi
+
+service mysql start
+
+# Prevent an unnecessary error if the container is restarted.
+mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS drupal;"
+
+drush cutie ${modules:- } --yes --use-existing --server=:80 --enable=${enable:-simpletest} --db-url=mysql://root:root@localhost:3306/drupal
