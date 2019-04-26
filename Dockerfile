@@ -4,6 +4,7 @@ ENV DEBIAN_FRONTEND="noninteractive"
 
 RUN apt update --yes
 RUN apt install --yes curl software-properties-common unzip
+RUN apt install --yes sendmail
 RUN add-apt-repository ppa:ondrej/php
 RUN apt install --yes php7.1 php7.1-curl php7.1-gd php7.1-json php7.1-mbstring php7.1-mcrypt php7.1-mysql php7.1-xml php7.1-xmlrpc php7.1-zip
 RUN echo "mysql-server mysql-server/root_password password root" | debconf-set-selections && \
