@@ -20,4 +20,11 @@ service mysql start
 # Prevent an unnecessary error if the container is restarted.
 mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS drupal;"
 
-drush cutie ${modules:- } --yes --use-existing --server=:80 --enable=${enable:-simpletest} --db-url=mysql://root:root@localhost:3306/drupal
+# Start the Drupal service.
+service drupal start
+
+# Clear all cache.
+drush cc all
+
+# Execute the testing group.
+drupal-simpletest "${test:- }"

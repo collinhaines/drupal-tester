@@ -1,6 +1,9 @@
 FROM ubuntu:18.04
 
 ENV DEBIAN_FRONTEND="noninteractive"
+ENV DRUPAL_VERSION="7.67"
+ENV DRUPAL_MD5="78b1814e55fdaf40e753fd523d059f8d"
+ENV DRUSH_VERSION="8.3.0"
 
 RUN apt update --yes
 RUN apt install --yes curl software-properties-common unzip
@@ -15,34 +18,24 @@ RUN echo "mysql-server mysql-server/root_password password root" | debconf-set-s
 WORKDIR /var/www/html
 
 # Ref: https://github.com/docker-library/drupal/blob/master/7/apache/Dockerfile
-ENV DRUPAL_VERSION 7.65
-ENV DRUPAL_MD5 d453c23413627594f3f05c984e339706
-
 RUN curl -fSL https://ftp.drupal.org/files/projects/drupal-${DRUPAL_VERSION}.tar.gz -o drupal.tar.gz && \
   echo "${DRUPAL_MD5} *drupal.tar.gz" | md5sum -c - && \
-  tar -xz --strip-components=1 -f drupal.tar.gz  && \
+  tar --extract --gunzip --strip-components=1 --file=drupal.tar.gz && \
   rm drupal.tar.gz index.html && \
   mkdir /var/www/html/results && \
   chown -R www-data:www-data /var/www/html
 
-# Composer.
-RUN curl -fSL https://getcomposer.org/installer | php && \
-  mv composer.phar /usr/local/bin/composer
-
 # Drush.
-WORKDIR /opt
-
-RUN composer require drush/drush:8.2.2 && \
-  ln -s /opt/vendor/drush/drush/drush /usr/local/bin/drush
+RUN curl -fSL https://github.com/drush-ops/drush/releases/download/${DRUSH_VERSION}/drush.phar -o /usr/local/bin/drush
 
 # Custom scripts and files.
+COPY drupal /etc/init.d/
 COPY drupal-simpletest drupal-simpletest-listing drupal-tester-start /usr/local/bin/
 COPY run-tests.sh /var/www/html/scripts
 COPY settings.php /var/www/html/sites/default
 
-RUN chmod +x /usr/local/bin/drupal-simpletest /usr/local/bin/drupal-simpletest-listing /usr/local/bin/drupal-tester-start
+RUN chmod +x /usr/local/bin/*
 
-WORKDIR /var/www/html
 EXPOSE 80
 
 CMD drupal-tester-start
