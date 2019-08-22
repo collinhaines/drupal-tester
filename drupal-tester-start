@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # Check if service is running.
-if [ $(pgrep mysql | wc -l) -gt 0 ];
-then
+if [ $(pgrep mysql | wc -l) -gt 0 ]; then
   service mysql stop
 fi
 
@@ -20,11 +19,18 @@ service mysql start
 # Prevent an unnecessary error if the container is restarted.
 mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS drupal;"
 
-# Start the Drupal service.
-service drupal start
+# Start the Drupal service. Pass in environment variables here since they're not
+# being detected within the service script.
+service drupal start "${enable:-simpletest}"
 
-# Clear all cache.
-drush cc all
+# If a test was given, go ahead and execute it then close out the image.
+if [ "${test}" ]; then
+  # Clear all cache.
+  drush cc all
 
-# Execute the testing group.
-drupal-simpletest "${test:- }"
+  # Execute the testing group.
+  drupal-simpletest "${test:- }"
+# Otherwise, leave the image up and running.
+else
+  tail -f /dev/null
+fi
