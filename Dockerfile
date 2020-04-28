@@ -1,41 +1,47 @@
 FROM ubuntu:18.04
 
+# Handle the operating system.
 ENV DEBIAN_FRONTEND="noninteractive"
-ENV DRUPAL_VERSION="7.67"
-ENV DRUPAL_MD5="78b1814e55fdaf40e753fd523d059f8d"
-ENV DRUSH_VERSION="8.3.0"
 
-RUN apt update --yes
-RUN apt install --yes curl software-properties-common unzip
-RUN apt install --yes sendmail
-RUN add-apt-repository ppa:ondrej/php
-RUN apt install --yes php7.1 php7.1-curl php7.1-gd php7.1-json php7.1-mbstring php7.1-mcrypt php7.1-mysql php7.1-xml php7.1-xmlrpc php7.1-zip
+RUN apt update --yes && \
+  apt upgrade --yes
+
+RUN apt install --yes curl git software-properties-common unzip
+
+RUN add-apt-repository ppa:ondrej/php && \
+  apt update --yes && \
+  apt install --yes libapache2-mod-php7.2 php7.2 php7.2-curl php7.2-dom php7.2-gd php7.2-json php7.2-mbstring php7.2-mysql php7.2-xml php7.2-xmlrpc php7.2-zip && \
+  sed -i 's/post_max_size = 8M/post_max_size = 100M/g' /etc/php/7.2/apache2/php.ini && \
+  sed -i 's/upload_max_filesize = 2M/upload_max_filesize = 100M/g' /etc/php/7.2/apache2/php.ini
+
 RUN echo "mysql-server mysql-server/root_password password root" | debconf-set-selections && \
   echo "mysql-server mysql-server/root_password_again password root" | debconf-set-selections && \
-  apt-get install mysql-server --yes
+  apt install mysql-server --yes && \
+  chown -R mysql:mysql /var/lib/mysql* 2>/dev/null && \
+  echo "<IfModule mod_dir.c>\n\tDirectoryIndex index.php index.html\n</IfModule>" > /etc/apache2/mods-enabled/dir.conf && \
+  echo "<Directory /var/www/html>\n\tOptions FollowSymLinks\n\tAllowOverride All\n\tRequire all granted\n</Directory>" >> /etc/apache2/apache2.conf && \
+  a2enmod rewrite && \
+  sed -i 's/export APACHE_RUN_USER=www-data/export APACHE_RUN_USER=tester/g' /etc/apache2/envvars
 
-# Drupal.
-WORKDIR /var/www/html
+RUN adduser --disabled-password --gecos "" tester && \
+  adduser tester www-data
 
-# Ref: https://github.com/docker-library/drupal/blob/master/7/apache/Dockerfile
-RUN curl -fSL https://ftp.drupal.org/files/projects/drupal-${DRUPAL_VERSION}.tar.gz -o drupal.tar.gz && \
-  echo "${DRUPAL_MD5} *drupal.tar.gz" | md5sum -c - && \
-  tar --extract --gunzip --strip-components=1 --file=drupal.tar.gz && \
-  rm drupal.tar.gz index.html && \
-  mkdir /var/www/html/results && \
-  chown -R www-data:www-data /var/www/html
+# Handle composer.
+RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && \
+  php composer-setup.php && \
+  php -r "unlink('composer-setup.php');" && \
+  mv composer.phar /usr/bin/composer
 
-# Drush.
-RUN curl -fSL https://github.com/drush-ops/drush/releases/download/${DRUSH_VERSION}/drush.phar -o /usr/local/bin/drush
+# Handle Drupal.
+WORKDIR /drupal
+RUN composer create-project drupal-composer/drupal-project:7.x-dev /drupal --no-interaction && \
+  rm -r /var/www/html && \
+  ln -s /drupal/web /var/www/html
 
-# Custom scripts and files.
-COPY drupal /etc/init.d/
-COPY drupal-simpletest drupal-simpletest-listing drupal-tester-start /usr/local/bin/
-COPY run-tests.sh /var/www/html/scripts
-COPY settings.php /var/www/html/sites/default
+ENV PATH="/drupal/vendor/bin:${PATH}"
 
-RUN chmod +x /usr/local/bin/*
+# Prepare the container.
+ADD . /container
+RUN chmod +x /container/start.sh
 
-EXPOSE 80
-
-CMD drupal-tester-start
+CMD ["/container/start.sh"]

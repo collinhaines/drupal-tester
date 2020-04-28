@@ -587,13 +587,10 @@ function simpletest_script_reporter_init() {
 function simpletest_script_reporter_write_xml_results() {
   global $args, $test_id, $results_map;
 
-  $results = db_query("SELECT * FROM {simpletest} WHERE test_id = :test_id ORDER BY test_class, message_id", array(':test_id' => $test_id))->fetchAll();
+  $results = db_query("SELECT * FROM {simpletest} WHERE test_id = :test_id ORDER BY test_class, message_id", array(':test_id' => $test_id));
 
   $test_class = '';
   $xml_files = array();
-
-  file_put_contents(DRUPAL_ROOT . '/results.txt', print_r($results, TRUE));
-  file_put_contents(DRUPAL_ROOT . '/results_map.txt', print_r($results_map, TRUE));
 
   foreach ($results as $result) {
     if (isset($results_map[$result->status])) {

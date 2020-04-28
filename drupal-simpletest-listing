@@ -1,7 +1,0 @@
-#!/bin/bash
-
-ORIGIN=$(pwd)
-
-cd /var/www/html
-php scripts/run-tests.sh --list
-cd $ORIGIN
