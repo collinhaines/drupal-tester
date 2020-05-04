@@ -11,11 +11,6 @@ composer config --global repositories.vc3 composer https://packages.web.vc3.com/
 rm -rf /module/node_modules /module/vendor
 composer require $PROJECT_NAME
 
-# Download VC3-based modules.
-if [ ! -z "$VC3_MODULES" ]; then
-  drush pm-download --pm-force --yes --source=https://missioncontrol.web.vc3.com/projects $VC3_MODULES
-fi
-
 # Download insecure modules.
 if [ ! -z "INSECURE_MODULES" ]; then
   drush pm-download --pm-force --yes $INSECURE_MODULES
