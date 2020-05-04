@@ -7,6 +7,7 @@ nohup bash -c "service mysql start && \
 
 # Require the module.
 composer config repositories.module path /module
+composer config --global repositories.vc3 composer https://packages.web.vc3.com/7
 rm -rf /module/node_modules /module/vendor
 composer require $PROJECT_NAME
 
