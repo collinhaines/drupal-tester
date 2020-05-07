@@ -8,9 +8,6 @@ All `docker run` commands must have the required environment variables and the m
 ```bash
 # Run tests on the Panelizer module.
 docker run -d --name simpletest -e PROJECT_NAME="drupal/panelizer" -e TEST_GROUP="Panelizer" -v /local/path/module:/module collinhaines/drupal-tester
-
-# Run tests on the Panelizer module and use the insecure module: field_collection_table
-docker run -d --name simpletest -e PROJECT_NAME="drupal/panelizer" -e TEST_GROUP="Panelizer" -e INSECURE_MODULES="field_collection_table" -v /local/path/module:/module collinhaines/drupal-tester
 ```
 
 ## Environment Variables
@@ -20,8 +17,11 @@ Composer project name.
 ### `TEST_GROUP` (required)
 Test group name.
 
-### `INSECURE_MODULES`
-List of modules sent to `drush pm-download` to download. This should only be used if `composer require drupal/[module]` fails.
+### `POST_COMMAND_HOOK`
+Command to execute by root after running unit tests.
+
+### `PRE_COMMAND_HOOK`
+Command to execute by root before running unit tests.
 
 ### `VC3_MODULES`
 List of modules to download from VC3's Mission Control website.

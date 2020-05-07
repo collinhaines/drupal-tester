@@ -11,11 +11,6 @@ composer config --global repositories.vc3 composer https://packages.web.vc3.com/
 rm -rf /module/node_modules /module/vendor
 composer require $PROJECT_NAME
 
-# Download insecure modules.
-if [ ! -z "INSECURE_MODULES" ]; then
-  drush pm-download --pm-force --yes $INSECURE_MODULES
-fi
-
 # Handle FPP unit test 500 error.
 if [ `find . -type f -name fieldable_panels_panes.info | wc -l` -gt 0 ]; then
   echo "Fieldable Panels Panes discovered, downloading Services to prevent 500."
@@ -30,10 +25,17 @@ echo "\$base_url = 'http://localhost';" >> /drupal/web/sites/default/settings.ph
 # Clear all cache before proceeding with testing.
 drush cache-clear all
 
-mkdir -p /drupal/web/sites/default/files/results && \
-  cp /container/scripts/run-tests.sh /drupal/web/scripts && \
-  chown -R tester:www-data /drupal/web
+mkdir -p /drupal/web/sites/default/files/results
+cp /container/scripts/run-tests.sh /drupal/web/scripts
 
-COMMAND="php /drupal/web/scripts/run-tests.sh --color --url http://localhost --xml /drupal/web/sites/default/files/results \"$TEST_GROUP\""
+if [ ! -z "PRE_COMMAND_HOOK" ]; then
+  "$PRE_COMMAND_HOOK"
+fi
 
-su - tester -c "$COMMAND"
+chown -R tester:www-data /drupal/web
+
+su - tester -c "php /drupal/web/scripts/run-tests.sh --color --url http://localhost --xml /drupal/web/sites/default/files/results \"$TEST_GROUP\""
+
+if [ ! -z "POST_COMMAND_HOOK" ]; then
+  "$POST_COMMAND_HOOK"
+fi
